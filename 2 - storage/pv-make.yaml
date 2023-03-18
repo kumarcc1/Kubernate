@@ -1,0 +1,19 @@
+- hosts: k8s-worker
+  become: yes
+  tasks:
+    - name: Create a new primary partition
+      parted:
+        device: /dev/sdb
+        number: 1
+        state: present
+    - name: Create a ext4 filesystem on /dev/sdb1 and check disk blocks
+      filesystem:
+        fstype: ext4
+        dev: /dev/sdb1
+    - name: Create a directory if it does not exist
+      file:
+        path: /data
+        state: directory
+
+    - name: mount
+      command: mount /dev/sdb1 /data

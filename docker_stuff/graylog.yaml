@@ -1,0 +1,92 @@
+version: "3.3"
+
+networks:
+  log:
+    driver: overlay
+
+services:
+  mongodb01a:
+    image: mongo:3.6
+    volumes:
+      - db:/data/db
+    command: mongod --replSet "rs0" --bind_ip_all
+    networks:
+      - log
+    deploy:
+      placement:
+        constraints:
+          - node.hostname == docker-w1
+
+  mongodb01b:
+    image: mongo:3.6
+    command: mongod -replSet "rs0" --bind_ip_all 
+    volumes:
+      - db:/data/db  
+    networks:
+      - log      
+    deploy:
+      placement:
+        constraints:
+          - node.hostname == docker-w2
+          
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.4.2
+    environment:
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+      - "network.host=0.0.0.0"
+      - "discovery.zen.ping.unicast.hosts=elasticsearch"
+      - "xpack.security.enabled=false"
+      - "xpack.monitoring.enabled=true"
+      - "xpack.watcher.enabled=false"
+      - "xpack.ml.enabled=false"
+    networks:
+      - log
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 512M
+      mode: global
+      endpoint_mode: dnsrr
+
+  graylog:
+    image: graylog/graylog:3.1
+    volumes:
+      - graylog_journal:/usr/share/graylog/data/journal
+    environment:
+      # CHANGE ME (must be at least 16 characters)!
+      - GRAYLOG_PASSWORD_SECRET=somepasswordpepper
+      # Password: admin
+      - GRAYLOG_ROOT_PASSWORD_SHA2=8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
+      - GRAYLOG_HTTP_EXTERNAL_URI=http://127.0.0.1:9000/
+      - GRAYLOG_MONGODB_URI=mongodb://mongodb01a:27017,mongodb01b:27017/graylog?replicaSet=rs0
+    networks:
+      - log
+    depends_on:
+      - mongodb
+      - elasticsearch
+    ports:
+      # Graylog web interface and REST API
+      - 9000:9000
+      # Syslog TCP
+      - 1514:1514
+      # Syslog UDP
+      - 1514:1514/udp
+      # GELF TCP
+      - 12201:12201
+      # GELF UDP
+      - 12201:12201/udp
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 512M
+          
+volumes:
+  esdata:
+  db:
+  graylog_journal:

@@ -1,0 +1,18 @@
+graylog:
+  persistence:
+    storageClass: openebs-jiva-default
+  input:
+    tcp:
+      service:
+        type: LoadBalancer
+      ports:
+        - name: gelf1
+          port: 12222
+        - name: gelf2
+          port: 12223
+    udp:
+      service:
+        type: LoadBalancer
+      ports:
+        - name: syslog
+          port: 5410

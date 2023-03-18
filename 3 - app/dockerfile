@@ -1,0 +1,10 @@
+FROM alpine:latest
+
+LABEL version="1.0"
+LABEL description="check loadbalancer functionality kubernetes MetalLB :)"
+LABEL maintainer "daniel.rapp@kontract"
+RUN apk update
+RUN apk add ca-certificates
+ADD web /opt/web
+EXPOSE 80
+ENTRYPOINT ["/opt/web"]

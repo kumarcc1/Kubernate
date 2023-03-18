@@ -1,0 +1,1 @@
+simple go app to show which ip the container has in the pod
